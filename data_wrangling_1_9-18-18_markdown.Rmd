@@ -1,0 +1,65 @@
+---
+title: "data_wrangling_1_9-18-18"
+author: "J Shearston"
+date: "September 18, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+```
+
+## Import FAS csv files
+
+Import my first couple of csv files.
+
+```{r}
+litters_data = read_csv(file = "./data_import_examples/data_import_examples/FAS_litters.csv")
+litters_data = janitor::clean_names(litters_data)
+names(litters_data)
+
+pups_data = read_csv(file = "./data_import_examples/data_import_examples/FAS_pups.csv", col_types = "ciiiii")
+pups_data = janitor::clean_names(pups_data)
+names(pups_data)
+
+```
+
+## Look at Imported Data
+
+Look throuh imported datasets.
+
+```{r}
+head(litters_data, 5)
+tail(litters_data, 5)
+skimr::skim(litters_data)
+
+head(pups_data, 5)
+tail(pups_data, 5)
+skimr::skim(litters_data)
+
+```
+
+## Reading in other file formats
+
+Read in MLB data (excel format)
+
+```{r}
+library(readxl)
+mlb_data = readxl::read_excel(path = "./data_import_examples/data_import_examples/mlb11.xlsx")
+mlb_subset = readxl::read_excel(path= "./data_import_examples/data_import_examples/mlb11.xlsx", 
+                                range = "A1:E17")
+
+```
+
+Read in Pulse data (SAS format)
+
+```{r}
+library(haven)
+pulse_data = read_sas("./data_import_examples/data_import_examples/public_pulse_data.sas7bdat")
+head(pulse_data, 5)
+
+```
+
+
