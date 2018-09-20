@@ -1,0 +1,202 @@
+---
+title: "data_wrangling_1_9-20-18"
+author: "J Shearston"
+date: "September 20, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+```
+
+## Import FAS csv files
+
+Import my first couple of csv files.
+
+```{r}
+litters_data = read_csv(file = "./data_import_examples/data_import_examples/FAS_litters.csv")
+litters_data = janitor::clean_names(litters_data)
+names(litters_data)
+
+pups_data = read_csv(file = "./data_import_examples/data_import_examples/FAS_pups.csv", col_types = "ciiiii")
+pups_data = janitor::clean_names(pups_data)
+names(pups_data)
+
+```
+
+## Look at Imported Data
+
+Look throuh imported datasets.
+
+```{r}
+head(litters_data, 5)
+tail(litters_data, 5)
+skimr::skim(litters_data)
+
+head(pups_data, 5)
+tail(pups_data, 5)
+skimr::skim(litters_data)
+
+```
+
+## Reading in other file formats
+
+Read in MLB data (excel format)
+
+```{r}
+library(readxl)
+mlb_data = readxl::read_excel(path = "./data_import_examples/data_import_examples/mlb11.xlsx")
+mlb_subset = readxl::read_excel(path= "./data_import_examples/data_import_examples/mlb11.xlsx", 
+                                range = "A1:E17")
+
+```
+
+Read in Pulse data (SAS format)
+
+```{r}
+library(haven)
+pulse_data = read_sas("./data_import_examples/data_import_examples/public_pulse_data.sas7bdat")
+head(pulse_data, 5)
+
+```
+
+##Select variables
+
+```{r}
+select(litters_data, group, litter_number, gd0_weight)
+
+select(litters_data, litter_number, gd0_weight, pups_survive)
+
+```
+
+...by specifying a range:
+
+```{r}
+select(litters_data, group, gd_of_birth:pups_survive)
+```
+
+...by removing what you want to remove
+
+```{r}
+select(litters_data, -litter_number)
+```
+
+...also rename as you select, or just rename
+
+```{r}
+select(litters_data, group, litter_number, gest_day_0_weight = gd0_weight)
+rename(litters_data, orig_litter_number = litter_number)
+```
+
+...pull in stuff that starts with something in particular, or reorder (select helpers)
+
+```{r}
+select(litters_data, starts_with("gd"))
+select(litters_data, litter_number, everything())
+```
+
+
+##Filtering observations
+
+```{r}
+filter(litters_data, gd0_weight < 25)
+filter(litters_data, gd0_weight >= 25)
+
+filter(litters_data, group == "Low7" | group == "Low8")
+filter(litters_data, group %in% c("Low7", "Low8"))
+
+filter(litters_data, pups_born_alive %in% 4:6)
+```
+
+
+##Mutate
+
+Create variables
+
+```{r}
+mutate(litters_data,
+       wt_gain = gd18_weight - gd0_weight,
+       group = tolower(group)
+       )
+
+mutate(litters_data,
+       wt_gain = gd18_weight - gd0_weight,
+       wt_gain_squared = wt_gain^2
+       )
+```
+
+
+##Arrange
+
+Putting data in a specific order, for example arranging by a specific variable numerically
+
+```{r}
+arrange(litters_data, gd0_weight)
+
+arrange(litters_data, desc(pups_born_alive), gd0_weight)
+```
+
+
+##Piping
+
+Look at intermediate object approach:
+
+```{r}
+litters_data_raw = read_csv("./data_import_examples/data_import_examples/FAS_litters.csv",
+  col_types = "ccddiiii")
+litters_data_clean_names = janitor::clean_names(litters_data_raw)
+litters_data_selected_cols = select(litters_data_clean_names, -pups_survive)
+litters_data_with_vars = mutate(litters_data_selected_cols, 
+  wt_gain = gd18_weight - gd0_weight,
+  group = tolower(group))
+litters_data_with_vars
+```
+
+Use nested function calls
+
+```{r}
+litters_data_clean = 
+  mutate(
+    select(
+      janitor::clean_names(
+        read_csv("./data_import_examples/data_import_examples/FAS_litters.csv", col_types = "ccddiiii")
+        ), 
+    -pups_survive
+    ),
+  wt_gain = gd18_weight - gd0_weight,
+  group = tolower(group)
+  )
+litters_data_clean
+```
+
+Use piping
+
+```{r}
+read_csv("./data_import_examples/data_import_examples/FAS_litters.csv", col_types = "ccddiiii") %>%
+  janitor::clean_names() %>%
+  select(-pups_survive) %>%
+  mutate(
+    wt_gain = gd18_weight - gd0_weight,
+    group = tolower(group)
+  ) %>% 
+  filter(!is.na(gd0_weight))
+  
+```
+
+Illustrate placeholder use with `lm`
+
+```{r}
+read_csv("./data_import_examples/data_import_examples/FAS_litters.csv", col_types = "ccddiiii") %>%
+  janitor::clean_names() %>%
+  select(-pups_survive) %>%
+  mutate(
+    wt_gain = gd18_weight - gd0_weight,
+    group = tolower(group)
+  ) %>% 
+  filter(!is.na(gd0_weight)) %>%
+  lm(gd18_weight ~ gd0_weight, data = .)
+
+```
+
